@@ -1,0 +1,11 @@
+# 한국투자증권 API Key 설정
+# 이 파일의 이름을 kis_devlp.yaml 로 변경하고 아래 내용을 실제 값으로 채워주세요.
+# gitignore에 등록되어 있으므로 실제 키가 commit될 염려는 없습니다.
+
+# 실전 투자
+appkey: "실전투자용 App Key"
+appsecret: "실전투자용 App Secret"
+
+# 모의 투자
+virtual_appkey: "모의투자용 App Key"
+virtual_appsecret: "모의투자용 App Secret"

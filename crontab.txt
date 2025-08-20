@@ -1,0 +1,5 @@
+# 매분마다 trader.py 스크립트를 실행합니다.
+# 실행 로그는 /var/log/cron.log 파일에 기록됩니다.
+* * * * * python /app/src/trader.py >> /var/log/cron.log 2>&1
+
+# cron 작업을 위한 빈 줄
