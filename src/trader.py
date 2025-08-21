@@ -1,34 +1,29 @@
-import datetime
-import sys
-import os
+"""
+Main entry point for running trading strategies.
+"""
+from src.strategies.llm_strategy import LLMStrategy
+from src.strategies.rsi_strategy import RSIStrategy
+from src.strategies.custom_strategy import CustomStrategy
 
-# src 디렉토리를 sys.path에 추가하여 KISApi 모듈을 찾을 수 있도록 합니다.
-# Docker 컨테이너의 /app/src 경로를 기준으로 설정합니다.
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from kis_api import KISApi
-
-def main():
+if __name__ == '__main__':
     """
-    메인 실행 함수.
-    cron에 의해 주기적으로 실행됩니다.
+    This is the main execution block.
+    It initializes and runs the desired trading strategies.
     """
-    print(f"[{datetime.datetime.now()}] Trader script is running...")
-    
-    try:
-        # KISApi 인스턴스 생성 및 토큰 발급 시도
-        # Docker 컨테이너 내의 절대 경로를 사용합니다.
-        api = KISApi(config_path='/app/config/kis_config.yaml')
-        token = api.get_access_token()
-        if token:
-            print("Token verification successful.")
-        else:
-            print("Token verification failed.")
-            
-    except FileNotFoundError:
-        print("ERROR: Config file not found. Make sure /app/config/kis_config.yaml exists.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    print("Initializing and running trading strategies...")
 
-if __name__ == "__main__":
-    main()
+    # Initialize the LLM-based strategy for algorithm partition 1
+    llm_strategy = LLMStrategy(algo_id=1)
+    llm_strategy.run()
+
+    # Initialize the RSI-based strategy for algorithm partition 2
+    # This strategy will watch two stocks.
+    rsi_strategy = RSIStrategy(algo_id=2, symbols=['000660', '035720']) # SK Hynix, Kakao
+    rsi_strategy.run()
+
+    # Initialize the Custom strategy for algorithm partition 3
+    custom_strategy = CustomStrategy(algo_id=3)
+    custom_strategy.run()
+
+    print("\nAll strategies have been run.")
+

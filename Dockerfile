@@ -7,6 +7,9 @@ WORKDIR /app
 # 필요한 시스템 패키지를 설치합니다. (cron 추가)
 RUN apt-get update && apt-get install -y cron
 
+# 데이터베이스 파일이 저장될 디렉토리를 생성합니다. (추가)
+RUN mkdir -p /app/data
+
 # 프로젝트의 모든 파일을 /app 디렉토리로 복사합니다.
 COPY . .
 
