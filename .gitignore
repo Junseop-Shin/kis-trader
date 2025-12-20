@@ -144,4 +144,4 @@ dmypy.json
 cython_debug/
 
 # Sensitive information
-config/kis_config.yaml
+config/kis_devlp.yaml

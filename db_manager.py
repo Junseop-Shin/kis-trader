@@ -4,7 +4,7 @@ import yaml
 from src.kis_api import KISApi # Import KISApi class
 
 # CONFIG_FILE = 'config/app_config.yaml' # Old way
-CONFIG_FILE = 'config/kis_config.yaml' # New way, as per user
+CONFIG_FILE = 'config/kis_devlp.yaml' # New way, as per user
 
 DATABASE_FILE = '' # Will be read from config
 

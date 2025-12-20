@@ -6,37 +6,41 @@ class KISApi:
     """
     한국투자증권 REST API와의 통신을 담당하는 클래스
     """
-    def __init__(self, config_path='config/kis_config.yaml', is_real_trading=False):
+    def __init__(self, config_path='config/kis_devlp.yaml', is_real_trading=False, config=None):
         """
         API 인스턴스를 초기화합니다.
         설정 파일에서 API 키와 기본 URL을 로드합니다.
         Args:
             config_path (str): Path to the configuration YAML file.
             is_real_trading (bool): True for real trading, False for virtual trading.
+            config (dict): Optional config dictionary.
         """
         self.is_real_trading = is_real_trading
-        self._load_config(config_path)
+        if config:
+            self._load_config_from_dict(config)
+        else:
+            self._load_config_from_path(config_path)
         self.access_token = None
         self.token_expires_at = None
 
-    def _load_config(self, config_path):
+    def _load_config_from_path(self, config_path):
         """설정 파일을 로드합니다."""
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         
-
         if self.is_real_trading:
-            real_config = config.get('real', {})
-            self.account_no = real_config.get('account_no', '')
-            self.appkey = real_config.get('appkey')
-            self.appsecret = real_config.get('appsecret')
-            self.base_url = f"{real_config.get('base_url')}:{real_config.get('port')}"
+            config = config.get('real', {})
         else:
-            virtual_config = config.get('virtual', {})
-            self.account_no = virtual_config.get('account_no', '')
-            self.appkey = virtual_config.get('appkey')
-            self.appsecret = virtual_config.get('appsecret')
-            self.base_url = f"{virtual_config.get('base_url')}:{virtual_config.get('port')}"
+            config = config.get('virtual', {})
+        
+        self._load_config_from_dict(config)
+
+    def _load_config_from_dict(self, config):
+        """설정 딕셔너리에서 설정을 로드합니다."""
+        self.account_no = config.get('account_no', '')
+        self.appkey = config.get('appkey')
+        self.appsecret = config.get('appsecret')
+        self.base_url = f"{config.get('base_url')}:{config.get('port')}"
 
     def _issue_token(self):
         """
@@ -176,6 +180,6 @@ if __name__ == '__main__':
         # print(f"Order result: {order_result}")
 
     except FileNotFoundError:
-        print("Please ensure 'config/kis_config.yaml' exists and is correctly configured.")
+        print("Please ensure 'config/kis_devlp.yaml' exists and is correctly configured.")
     except Exception as e:
         print(f"An error occurred: {e}")

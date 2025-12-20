@@ -1,6 +1,7 @@
 import sqlite3
 import datetime
 import os
+import time
 from abc import ABC, abstractmethod
 
 import db_manager
@@ -13,17 +14,20 @@ DATABASE_FILE = db_manager.DATABASE_FILE
 class BaseStrategy(ABC):
     """The base class for all trading strategies."""
 
-    def __init__(self, algo_id: int):
+    def __init__(self, algo_id: int, config: dict):
         """
         Initializes the strategy by loading its state from the database.
 
         Args:
             algo_id (int): The ID of the algorithm in the database.
+            config (dict): The configuration dictionary.
         """
         self.algo_id = algo_id
+        self.config = config
         self.initial_capital = 0
         self.current_capital = 0
         self.holdings = {}
+        self.running = False
 
         self._load_state_from_db()
 
@@ -145,24 +149,39 @@ class BaseStrategy(ABC):
         pass
 
     def run(self):
-        """Orchestrates the entire trading process."""
+        """Orchestrates the entire trading process in a loop."""
         print(f"\n----- Running Strategy: {self.__class__.__name__} -----")
-        # 1. Pre-process
-        self._fetch_data()
+        self.running = True
+        try:
+            while self.running:
+                # 1. Pre-process
+                self._fetch_data()
 
-        # 2. Main-process
-        decisions = self.decide()
+                # 2. Main-process
+                decisions = self.decide()
 
-        # 3. Post-process
-        if decisions:
-            for decision in decisions:
-                self._execute_and_log_trade(
-                    symbol=decision['symbol'],
-                    trade_type=decision['action'],
-                    price=decision['price'],
-                    quantity=decision['quantity'],
-                    notes=f"Trade by {self.__class__.__name__}"
-                )
-        else:
-            print("No action taken.")
-        print("----- Strategy run finished. -----")
+                # 3. Post-process
+                if decisions:
+                    for decision in decisions:
+                        self._execute_and_log_trade(
+                            symbol=decision['symbol'],
+                            trade_type=decision['action'],
+                            price=decision['price'],
+                            quantity=decision['quantity'],
+                            notes=f"Trade by {self.__class__.__name__}"
+                        )
+                else:
+                    print("No action taken.")
+                
+                print("----- Strategy run finished. Waiting for next cycle... -----")
+                time.sleep(5) # 5-second interval
+
+        except KeyboardInterrupt:
+            print(f"Strategy {self.__class__.__name__} stopped by user.")
+        finally:
+            self.stop()
+
+    def stop(self):
+        """Stops the strategy loop."""
+        self.running = False
+        print(f"----- Stopping Strategy: {self.__class__.__name__} -----")

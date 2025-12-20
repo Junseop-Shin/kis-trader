@@ -1,5 +1,7 @@
-# 매분마다 trader.py 스크립트를 실행합니다.
-# 실행 로그는 /var/log/cron.log 파일에 기록됩니다.
-* * * * * /usr/local/bin/python3 /app/src/trader.py >> /tmp/cron.log 2>&1
+# 평일 오전 9시에 트레이딩 봇을 시작합니다.
+0 9 * * 1-5 /usr/local/bin/python3 /app/src/trader.py >> /tmp/cron.log 2>&1 &
+
+# 평일 오후 3시 30분에 실행중인 트레이딩 봇을 종료합니다.
+30 15 * * 1-5 pkill -f "python3 /app/src/trader.py" >> /tmp/cron.log 2>&1
 
 # cron 작업을 위한 빈 줄

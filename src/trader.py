@@ -1,6 +1,7 @@
 """
 Main entry point for running trading strategies.
 """
+import yaml
 from src.strategies.llm_strategy import LLMStrategy
 from src.strategies.rsi_strategy import RSIStrategy
 from src.strategies.custom_strategy import CustomStrategy
@@ -12,18 +13,29 @@ if __name__ == '__main__':
     """
     print("Initializing and running trading strategies...")
 
+    # Load config
+    with open('config/kis_devlp.yaml', 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+
+    # Set trading mode: True for real, False for virtual
+    is_real_trading = False
+    
+    trading_config = config['real'] if is_real_trading else config['virtual']
+    gemini_api_key = config['gemini_api_key']
+
+
     # Initialize the LLM-based strategy for algorithm partition 1
-    llm_strategy = LLMStrategy(algo_id=1)
+    llm_strategy = LLMStrategy(algo_id=1, config=trading_config, gemini_api_key=gemini_api_key)
     llm_strategy.run()
 
     # Initialize the RSI-based strategy for algorithm partition 2
     # This strategy will watch two stocks.
-    rsi_strategy = RSIStrategy(algo_id=2, symbols=['000660', '035720']) # SK Hynix, Kakao
-    rsi_strategy.run()
+    # rsi_strategy = RSIStrategy(algo_id=2, symbols=['000660', '035720'], config=trading_config)
+    # rsi_strategy.run()
 
     # Initialize the Custom strategy for algorithm partition 3
-    custom_strategy = CustomStrategy(algo_id=3)
-    custom_strategy.run()
+    # custom_strategy = CustomStrategy(algo_id=3, config=trading_config)
+    # custom_strategy.run()
 
     print("\nAll strategies have been run.")
 
