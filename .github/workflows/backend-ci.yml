@@ -1,0 +1,36 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'maven'
+
+    - name: Grant execute permission for mvnw
+      run: chmod +x mvnw
+
+    - name: Build with Maven
+      run: ./mvnw clean package -DskipTests
+
+    - name: Run Tests
+      # Env vars for testing (Mocked in Unit Tests, but setting placeholders for context)
+      env:
+        KIS_APPKEY: "test_key"
+        KIS_APPSECRET: "test_secret"
+      run: ./mvnw test

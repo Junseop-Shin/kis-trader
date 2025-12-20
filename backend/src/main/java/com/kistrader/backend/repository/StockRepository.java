@@ -1,6 +1,6 @@
 package com.kistrader.backend.repository;
 
-import com.kistrader.backend.domain.Stock;
+import com.kistrader.backend.domain.stock.Stock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
