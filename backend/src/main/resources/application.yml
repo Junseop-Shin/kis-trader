@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: kis-trader-backend
+  
+kis:
+  base-url: https://openapi.koreainvestment.com:9443
+  appkey: ${KIS_APPKEY}
+  appsecret: ${KIS_APPSECRET}
+  datasource:
+    url: jdbc:postgresql://localhost:5432/kistrader
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  batch:
+    job:
+      enabled: false # Disable auto-run on startup by default
+    jdbc:
+      initialize-schema: always
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.springframework.batch: INFO
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
