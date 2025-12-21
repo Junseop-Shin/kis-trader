@@ -22,15 +22,12 @@ jobs:
         distribution: 'temurin'
         cache: 'maven'
 
-    - name: Grant execute permission for mvnw
-      run: chmod +x mvnw
-
     - name: Build with Maven
-      run: ./mvnw clean package -DskipTests
+      run: mvn clean package -DskipTests
 
     - name: Run Tests
       # Env vars for testing (Mocked in Unit Tests, but setting placeholders for context)
       env:
         KIS_APPKEY: "test_key"
         KIS_APPSECRET: "test_secret"
-      run: ./mvnw test
+      run: mvn test

@@ -15,3 +15,8 @@ spring:
       enabled: false
   flyway:
     enabled: false # Disable Flyway for tests to rely on ddl-auto
+
+kis:
+  base-url: https://openapi.koreainvestment.com:9443
+  appkey: test-key
+  appsecret: test-secret
