@@ -2,9 +2,9 @@ spring:
   application:
     name: kis-trader-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/kistrader
-    username: postgres
-    password: password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kistrader}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -36,6 +36,10 @@ kis:
   base-url: https://openapi.koreainvestment.com:9443
   appkey: ${KIS_APPKEY}
   appsecret: ${KIS_APPSECRET}
+
+engine:
+  live-url: ${LIVE_ENGINE_URL:http://localhost:8000}
+  backtest-url: ${BACKTEST_ENGINE_URL:http://localhost:8001}
 
 logging:
   level:

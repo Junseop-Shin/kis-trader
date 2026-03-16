@@ -1,0 +1,21 @@
+# Cloudflare Tunnel configuration
+# Replace <tunnel-id> with your actual tunnel ID from: cloudflared tunnel create kis-trader
+# Replace your-domain.com with your actual domain
+
+tunnel: <tunnel-id>
+credentials-file: /etc/cloudflared/<tunnel-id>.json
+
+ingress:
+  - hostname: app.your-domain.com
+    service: http://localhost:3000
+
+  - hostname: api.your-domain.com
+    service: http://localhost:8080
+
+  - hostname: ws.your-domain.com
+    service: http://localhost:8080
+    originRequest:
+      noTLSVerify: false
+
+  # Catch-all rule (required by cloudflared)
+  - service: http_status:404
