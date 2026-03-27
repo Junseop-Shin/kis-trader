@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .middleware.audit_middleware import AuditMiddleware
-from .routers import auth, market, accounts
+from .routers import auth, market, accounts, strategies, backtest
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -53,6 +53,8 @@ app.add_middleware(AuditMiddleware)
 app.include_router(auth.router)
 app.include_router(market.router)
 app.include_router(accounts.router)
+app.include_router(strategies.router)
+app.include_router(backtest.router)
 
 
 @app.get("/health")
