@@ -17,7 +17,9 @@ from ..schemas.backtest import (
     BacktestCompareRequest,
     BacktestRunRequest,
     BacktestRunResponse,
+    CounterfactualRequest,
 )
+from ..services.backtest_service import run_counterfactual
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 logger = logging.getLogger(__name__)
@@ -221,6 +223,26 @@ async def compare_strategies(
         runs.append(run)
 
     return {"runs": runs, "message": f"Started {len(runs)} comparison backtest runs"}
+
+
+@router.post("/counterfactual")
+async def counterfactual_analysis(
+    req: CounterfactualRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Compare strategies against an account's actual trading history.
+    Runs each strategy over the same period/tickers the account traded.
+    """
+    try:
+        result = await run_counterfactual(
+            req.account_id, req.strategy_ids, current_user.id, db, settings
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.websocket("/ws/{run_id}")
