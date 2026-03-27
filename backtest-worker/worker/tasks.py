@@ -144,3 +144,63 @@ def _run_optimize(AlgoClass, base_params, trade_params, prices, benchmark, param
         "best_metrics": best_result["metrics"] if best_result else {},
         "all_results": all_results[:50],
     }
+
+
+@app.task(bind=True, max_retries=1, name="worker.tasks.run_custom_backtest_task")
+def run_custom_backtest_task(
+    self,
+    run_id: int,
+    code: str,
+    params: dict,
+    trade_params: dict,
+    prices_json: str,
+    benchmark_json: str | None = None,
+):
+    """Run a custom user-provided strategy in a sandboxed Docker container."""
+    from .sandbox import run_custom_code
+    from .algorithms.base import BaseAlgorithm
+
+    try:
+        self.update_state(state="STARTED", meta={"progress": 0, "run_id": run_id})
+
+        # Run custom code in sandbox to get signals
+        result = run_custom_code(code, prices_json, params)
+        if not result["success"]:
+            raise ValueError(f"Custom code error: {result['error']}")
+
+        self.update_state(state="PROGRESS", meta={"progress": 50, "run_id": run_id})
+
+        # Use base algorithm simulation with the generated signals
+        prices = pd.DataFrame(json.loads(prices_json))
+        prices["date"] = pd.to_datetime(prices["date"])
+        prices = prices.set_index("date").sort_index()
+
+        benchmark = None
+        if benchmark_json:
+            benchmark = pd.DataFrame(json.loads(benchmark_json))
+            benchmark["date"] = pd.to_datetime(benchmark["date"])
+            benchmark = benchmark.set_index("date").sort_index()
+
+        # Create a wrapper algorithm that returns the pre-computed signals
+        signals = pd.Series(result["signals"], index=prices.index[: len(result["signals"])])
+
+        class CustomWrapper(BaseAlgorithm):
+            def generate_signals(self, df):
+                return signals
+
+        algo = CustomWrapper(params, trade_params)
+        trades, equity_curve, metrics = algo.run(prices, benchmark)
+
+        self.update_state(state="PROGRESS", meta={"progress": 90, "run_id": run_id})
+
+        return {
+            "run_id": run_id,
+            "status": "DONE",
+            "trades": [t.__dict__ for t in trades],
+            "equity_curve": equity_curve,
+            "metrics": metrics.__dict__,
+        }
+
+    except Exception as exc:
+        logger.exception(f"Custom backtest failed for run_id={run_id}")
+        return {"run_id": run_id, "status": "FAILED", "error": str(exc)}

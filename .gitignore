@@ -153,6 +153,10 @@ cloudflare/*.json
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+node_modules/
 
 # Backend build artifacts
 backend/target/
+
+# Docker
+postgres_data/
