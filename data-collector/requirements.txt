@@ -1,0 +1,6 @@
+pykrx==1.0.46
+sqlalchemy[asyncio]==2.0.35
+asyncpg==0.29.0
+pandas==2.2.2
+apscheduler==3.10.4
+python-dotenv==1.0.1
