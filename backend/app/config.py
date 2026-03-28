@@ -1,5 +1,10 @@
-from pydantic_settings import BaseSettings
+import os
 from functools import lru_cache
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings
+
+_UNSAFE_DEFAULTS = {"change-me-in-production", "change-me-32-bytes-fernet-key-here"}
 
 
 class Settings(BaseSettings):
@@ -19,6 +24,9 @@ class Settings(BaseSettings):
     KIS_BASE_URL: str = "https://openapi.koreainvestment.com:9443"
     KIS_ENCRYPT_KEY: str = "change-me-32-bytes-fernet-key-here"
 
+    # Inter-service auth (backend ↔ real-trading)
+    INTERNAL_API_KEY: str = "change-me-internal-api-key"
+
     # Slack
     SLACK_BOT_TOKEN: str = ""
     SLACK_CHANNEL: str = "#kis-trader"
@@ -32,6 +40,17 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "https://trade.yourdomain.com"]
+
+    @model_validator(mode="after")
+    def reject_unsafe_defaults(self) -> "Settings":
+        # Skip check in test environments
+        if os.getenv("TESTING") == "1":
+            return self
+        if self.JWT_SECRET_KEY in _UNSAFE_DEFAULTS:
+            raise ValueError("JWT_SECRET_KEY must be set in .env — refusing to start with default value")
+        if self.KIS_ENCRYPT_KEY in _UNSAFE_DEFAULTS:
+            raise ValueError("KIS_ENCRYPT_KEY must be set in .env — refusing to start with default value")
+        return self
 
     class Config:
         env_file = ".env"

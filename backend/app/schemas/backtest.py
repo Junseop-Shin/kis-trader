@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 
@@ -36,8 +36,8 @@ class BacktestRunResponse(BaseModel):
     result_json: dict | None = None
     error_message: str | None = None
     celery_task_id: str | None = None
-    created_at: str
-    completed_at: str | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

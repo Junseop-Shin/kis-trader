@@ -30,7 +30,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 raw_body = await request.body()
                 body_data = json.loads(raw_body)
                 # Redact sensitive fields
-                for key in ("password", "totp_code", "refresh_token", "kis_app_secret"):
+                for key in ("password", "totp_code", "refresh_token", "kis_app_secret", "kis_app_key"):
                     if key in body_data:
                         body_data[key] = "***REDACTED***"
             except Exception:

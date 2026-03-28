@@ -43,7 +43,12 @@ async def login(
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
-    ip_address = request.client.host if request.client else None
+    # CF-Connecting-IP (Cloudflare) → X-Forwarded-For → direct connection
+    ip_address = (
+        request.headers.get("CF-Connecting-IP")
+        or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or (request.client.host if request.client else None)
+    ) or None
     try:
         tokens = await authenticate_user(
             req.email, req.password, req.totp_code, ip_address, db, settings

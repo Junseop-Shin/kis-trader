@@ -14,12 +14,14 @@ logger = logging.getLogger(__name__)
 
 def run_custom_code(code: str, prices_json: str, params: dict) -> dict:
     """
-    1. Write user code + harness to temp file
+    1. Write user code + harness to temp file; prices passed via JSON file (not f-string)
     2. Run in Docker container with restrictions
     3. Capture output and return results (signal list)
     """
     client = docker.from_env()
 
+    # prices_json is written to a separate file — never interpolated into Python source
+    # to prevent triple-quote injection attacks
     harness = f'''
 import pandas as pd
 import numpy as np
@@ -31,10 +33,13 @@ try:
 except ImportError:
     ta = None
 
-prices = pd.DataFrame(json.loads("""{prices_json}"""))
+with open("/code/prices.json") as _f:
+    prices = pd.DataFrame(json.load(_f))
 prices["date"] = pd.to_datetime(prices["date"])
 prices = prices.set_index("date").sort_index()
-params = {json.dumps(params)}
+
+with open("/code/params.json") as _f:
+    params = json.load(_f)
 
 # === USER CODE START ===
 {code}
@@ -51,9 +56,13 @@ print(json.dumps(result))
 '''
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        code_file = os.path.join(tmpdir, "strategy.py")
-        with open(code_file, "w") as f:
+        with open(os.path.join(tmpdir, "strategy.py"), "w") as f:
             f.write(harness)
+        # Write data files separately — never interpolated into Python source
+        with open(os.path.join(tmpdir, "prices.json"), "w") as f:
+            f.write(prices_json)
+        with open(os.path.join(tmpdir, "params.json"), "w") as f:
+            json.dump(params, f)
 
         try:
             result = client.containers.run(
@@ -64,6 +73,11 @@ print(json.dumps(result))
                 mem_limit="512m",
                 cpu_period=100000,
                 cpu_quota=100000,
+                pids_limit=64,
+                user="nobody",
+                read_only=True,
+                security_opt=["no-new-privileges:true"],
+                cap_drop=["ALL"],
                 remove=True,
                 stdout=True,
                 stderr=True,

@@ -6,8 +6,9 @@ Handles: KIS real account orders, balance, positions
 import logging
 import os
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Security, WebSocket, WebSocketDisconnect
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 
 from .trading_engine import execute_real_order, get_account_balance, get_account_positions
@@ -22,6 +23,15 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=["localhost", "127.0.0.1", "*.local"],
 )
+
+_api_key_header = APIKeyHeader(name="X-Internal-Key", auto_error=True)
+
+_INTERNAL_API_KEY = os.environ.get("INTERNAL_API_KEY", "")
+
+
+async def _require_internal_key(api_key: str = Security(_api_key_header)) -> None:
+    if not _INTERNAL_API_KEY or api_key != _INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 
 class OrderRequest(BaseModel):
@@ -45,7 +55,7 @@ async def health():
 
 
 @app.post("/real/order")
-async def place_order(request: OrderRequest):
+async def place_order(request: OrderRequest, _: None = Depends(_require_internal_key)):
     """Execute a real order via KIS API with risk checks."""
     try:
         result = await execute_real_order(
@@ -64,7 +74,7 @@ async def place_order(request: OrderRequest):
 
 
 @app.get("/real/balance")
-async def get_balance(account_id: int):
+async def get_balance(account_id: int, _: None = Depends(_require_internal_key)):
     """Get real account balance via KIS API."""
     try:
         return await get_account_balance(account_id)
@@ -76,7 +86,7 @@ async def get_balance(account_id: int):
 
 
 @app.get("/real/positions")
-async def get_positions(account_id: int):
+async def get_positions(account_id: int, _: None = Depends(_require_internal_key)):
     """Get real account positions via KIS API."""
     try:
         return await get_account_positions(account_id)
@@ -88,7 +98,7 @@ async def get_positions(account_id: int):
 
 
 @app.post("/real/trading/activate")
-async def activate_real_strategy(request: ActivateRequest):
+async def activate_real_strategy(request: ActivateRequest, _: None = Depends(_require_internal_key)):
     """Activate real-money strategy (delegates to main backend scheduler)."""
     return {
         "message": "Strategy activation registered",

@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 
@@ -18,9 +19,9 @@ class ActivationResponse(BaseModel):
     account_id: int
     status: str
     tickers: list[str]
-    last_signal_date: str | None = None
+    last_signal_date: date | None = None
     last_signal_action: str | None = None
-    created_at: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 

@@ -3,12 +3,13 @@ import logging
 from datetime import datetime, timezone
 
 from celery import Celery
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from jose import JWTError, jwt
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import Settings, get_settings
-from ..database import get_db
+from ..database import async_session_factory, get_db
 from ..deps import get_current_user
 from ..models.backtest import BacktestRun, BacktestStatus, ValidationMode
 from ..models.strategy import Strategy
@@ -24,13 +25,19 @@ from ..services.backtest_service import run_counterfactual
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 logger = logging.getLogger(__name__)
 
+# Module-level Celery singleton — created once per process
+_celery_app: Celery | None = None
+
 
 def _get_celery_app(settings: Settings) -> Celery:
-    return Celery(
-        "backtest_worker",
-        broker=settings.REDIS_URL,
-        backend=settings.REDIS_URL,
-    )
+    global _celery_app
+    if _celery_app is None:
+        _celery_app = Celery(
+            "backtest_worker",
+            broker=settings.REDIS_URL,
+            backend=settings.REDIS_URL,
+        )
+    return _celery_app
 
 
 async def _fetch_prices(db: AsyncSession, tickers: list[str], start_date, end_date) -> str:
@@ -152,7 +159,7 @@ async def create_backtest_run(
 
 @router.get("/runs", response_model=list[BacktestRunResponse])
 async def list_backtest_runs(
-    limit: int = 20,
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -249,26 +256,56 @@ async def counterfactual_analysis(
 async def backtest_ws(
     websocket: WebSocket,
     run_id: int,
+    token: str = Query(...),
     settings: Settings = Depends(get_settings),
 ):
-    """WebSocket endpoint to stream backtest progress."""
+    """WebSocket endpoint to stream backtest progress. Requires JWT via ?token=."""
+    import asyncio
+
+    # Authenticate before accepting the connection
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        user_id = int(payload.get("sub", 0))
+        if not user_id:
+            await websocket.close(code=4001)
+            return
+    except JWTError:
+        await websocket.close(code=4001)
+        return
+
+    # Verify run ownership
+    async with async_session_factory() as db:
+        result = await db.execute(
+            select(BacktestRun).where(
+                BacktestRun.id == run_id,
+                BacktestRun.user_id == user_id,
+            )
+        )
+        run = result.scalar_one_or_none()
+    if not run:
+        await websocket.close(code=4004)
+        return
+
     await websocket.accept()
     celery_app = _get_celery_app(settings)
 
-    try:
-        # Find the run's Celery task ID
-        async with (await __import__("contextlib").asynccontextmanager(
-            lambda: get_db()
-        )()) as db:
-            pass
-        # Simplified: poll Celery task status
-        import asyncio
+    MAX_POLL_SECONDS = 600  # 10-minute ceiling
+    elapsed = 0
 
-        while True:
-            # Check all recent tasks for this run_id
-            # In practice, we'd store task_id and look it up
-            await websocket.send_json({"run_id": run_id, "status": "polling"})
+    try:
+        while elapsed < MAX_POLL_SECONDS:
+            status_payload: dict = {"run_id": run_id, "status": "polling"}
+
+            if run.celery_task_id:
+                task_result = celery_app.AsyncResult(run.celery_task_id)
+                if task_result.ready():
+                    status_payload["status"] = "done" if task_result.successful() else "failed"
+                    await websocket.send_json(status_payload)
+                    break
+
+            await websocket.send_json(status_payload)
             await asyncio.sleep(2)
+            elapsed += 2
     except WebSocketDisconnect:
         pass
     except Exception as e:

@@ -221,7 +221,13 @@ async def get_stock_indicators(
     response: dict = {"dates": [d.strftime("%Y-%m-%d") for d in df["date"]]}
 
     if "ma" in ind_list:
-        periods = [int(p) for p in ma_periods.split(",")]
+        try:
+            raw_periods = [int(p.strip()) for p in ma_periods.split(",")]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="ma_periods must be comma-separated integers")
+        if len(raw_periods) > 5:
+            raise HTTPException(status_code=400, detail="ma_periods: max 5 values allowed")
+        periods = [p for p in raw_periods if 2 <= p <= 200]
         for p in periods:
             sma = df["close"].rolling(p).mean()
             response[f"sma_{p}"] = [round(v, 2) if pd.notna(v) else None for v in sma]

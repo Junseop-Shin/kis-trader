@@ -24,7 +24,6 @@ class RefreshRequest(BaseModel):
 
 
 class TOTPSetupResponse(BaseModel):
-    secret: str
     qr_code_base64: str
 
 

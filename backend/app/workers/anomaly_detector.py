@@ -21,16 +21,22 @@ from ..services.slack_service import SlackService
 logger = logging.getLogger(__name__)
 
 
-async def _get_current_price(ticker: str, db: AsyncSession) -> float | None:
+async def _get_price_change(ticker: str, db: AsyncSession) -> tuple[float, float] | None:
+    """Return (current_close, daily_change_pct) using the two most recent daily bars."""
     result = await db.execute(
         text(
             "SELECT close FROM price_daily WHERE ticker = :ticker "
-            "ORDER BY date DESC LIMIT 1"
+            "ORDER BY date DESC LIMIT 2"
         ),
         {"ticker": ticker},
     )
-    row = result.fetchone()
-    return float(row[0]) if row else None
+    rows = result.fetchall()
+    if not rows:
+        return None
+    current = float(rows[0][0])
+    prev = float(rows[1][0]) if len(rows) >= 2 else current
+    daily_change = (current - prev) / prev if prev > 0 else 0.0
+    return current, daily_change
 
 
 async def check_anomalies():
@@ -77,14 +83,14 @@ async def check_anomalies():
                 total_invested = 0.0
 
                 for pos in positions:
-                    current_price = await _get_current_price(pos.ticker, db)
-                    if current_price is None:
+                    price_data = await _get_price_change(pos.ticker, db)
+                    if price_data is None:
                         continue
+                    current_price, daily_change = price_data
 
                     pos.current_price = current_price
                     pos.unrealized_pnl = (current_price - pos.avg_price) * pos.qty
 
-                    daily_change = (current_price - pos.avg_price) / pos.avg_price if pos.avg_price > 0 else 0
                     total_value += current_price * pos.qty
                     total_invested += pos.avg_price * pos.qty
 

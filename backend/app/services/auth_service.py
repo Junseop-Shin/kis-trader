@@ -69,12 +69,12 @@ async def authenticate_user(
         raise ValueError("Invalid email or password")
 
     if user.is_locked:
-        raise ValueError("Account is locked due to too many failed attempts")
+        raise ValueError("ACCOUNT_LOCKED")
 
-    # IP check for ADMIN
+    # IP check for ADMIN — fail closed: no IP = deny
     if user.role == UserRole.ADMIN and user.allowed_ips:
-        if ip_address and ip_address not in user.allowed_ips:
-            raise ValueError(f"IP {ip_address} not allowed for admin account")
+        if not ip_address or ip_address not in user.allowed_ips:
+            raise ValueError(f"IP {ip_address!r} not allowed for admin account")
 
     if not verify_password(password, user.password_hash):
         user.login_fail_count += 1
@@ -130,7 +130,8 @@ async def refresh_tokens(
     if not token:
         raise ValueError("Invalid refresh token")
 
-    if token.expires_at < datetime.now(timezone.utc):
+    expires_at = token.expires_at if token.expires_at.tzinfo else token.expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
         token.revoked = True
         await db.flush()
         raise ValueError("Refresh token expired")
@@ -184,7 +185,7 @@ async def setup_totp(user: User, db: AsyncSession) -> dict:
     user.totp_secret = secret
     await db.flush()
     qr_base64 = generate_totp_qr(secret, user.email)
-    return {"secret": secret, "qr_code_base64": qr_base64}
+    return {"qr_code_base64": qr_base64}
 
 
 async def verify_totp(user: User, code: str, db: AsyncSession) -> bool:

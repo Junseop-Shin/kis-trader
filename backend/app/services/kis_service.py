@@ -26,6 +26,12 @@ async def place_sim_order(
     tax_pct = 0.002 if side == "SELL" else 0
 
     if side == "BUY":
+        # Lock the account row to prevent concurrent double-spend
+        locked = await db.execute(
+            select(type(account)).where(type(account).id == account.id).with_for_update()
+        )
+        account = locked.scalar_one()
+
         total_cost = qty * price * (1 + commission_pct)
         if total_cost > account.cash_balance:
             raise ValueError(f"Insufficient balance. Need {total_cost:,.0f}, have {account.cash_balance:,.0f}")

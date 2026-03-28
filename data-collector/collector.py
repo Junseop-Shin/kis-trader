@@ -4,7 +4,6 @@ Collects: stock list, 3-year daily OHLCV (adjusted), fundamentals (PER/PBR/ROE).
 """
 import asyncio
 import logging
-import time
 from datetime import date, timedelta
 
 import pandas as pd
@@ -28,12 +27,12 @@ async def collect_stock_list(session_factory) -> int:
     collected = 0
     for market in ["KOSPI", "KOSDAQ"]:
         tickers = krx.get_market_ticker_list(market=market)
-        time.sleep(0.2)
+        await asyncio.sleep(0.2)
 
         async with session_factory() as db:
             for ticker in tickers:
                 name = krx.get_market_ticker_name(ticker)
-                time.sleep(0.05)
+                await asyncio.sleep(0.05)
 
                 await db.execute(
                     text(
@@ -82,7 +81,7 @@ async def collect_daily_prices_bulk(
             for ticker in batch:
                 try:
                     df = krx.get_market_ohlcv(start, end, ticker, adjusted=True)
-                    time.sleep(0.15)
+                    await asyncio.sleep(0.15)
 
                     if df.empty:
                         continue
@@ -137,14 +136,14 @@ async def collect_fundamentals(session_factory, target_date: str | None = None) 
     for market in ["KOSPI", "KOSDAQ"]:
         try:
             df = krx.get_market_fundamental(target_date, market=market)
-            time.sleep(0.3)
+            await asyncio.sleep(0.3)
 
             if df.empty:
                 continue
 
             # Market cap data
             cap_df = krx.get_market_cap(target_date, market=market)
-            time.sleep(0.3)
+            await asyncio.sleep(0.3)
 
             async with session_factory() as db:
                 for ticker in df.index:
