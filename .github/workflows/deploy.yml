@@ -31,6 +31,7 @@ jobs:
           port: 2222
           key: ${{ secrets.WINDOWS_SSH_KEY }}
           command_timeout: 30m
+          debug: true
           script: |
             powershell -Command "if (Test-Path 'C:\Users\ylswn\Projects\kis-trader') { Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml down 2>$null }"
             powershell -Command "$ProgressPreference='SilentlyContinue'; $h=@{Authorization='token ${{ secrets.GITHUB_TOKEN }}';'User-Agent'='deploy-script'}; Invoke-WebRequest 'https://api.github.com/repos/Junseop-Shin/kis-trader/zipball/main' -Headers $h -OutFile 'C:\Users\ylswn\Projects\kis-main.zip'"
