@@ -66,6 +66,17 @@ services:
       - internal
     restart: unless-stopped
 
+  backtest-worker:
+    build: ./backtest-worker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file: .env
+    depends_on:
+      - redis
+    networks:
+      - internal
+    restart: unless-stopped
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel run

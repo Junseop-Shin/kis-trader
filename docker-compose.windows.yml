@@ -3,6 +3,7 @@ version: '3.9'
 # Usage: docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build
 #
 # Reuses existing techfeed-postgres on host:3104 (TimescaleDB pg15)
+# Runs own redis in Docker internal network (no host port — no conflict with techfeed-redis)
 # DB: kistrader / User: kistrader
 services:
   frontend:
