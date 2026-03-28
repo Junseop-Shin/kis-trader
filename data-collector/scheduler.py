@@ -55,6 +55,8 @@ async def startup_check():
             await initial_bulk_load(session_factory)
         else:
             logger.info("Database has data. Skipping initial bulk load.")
+    except Exception as e:
+        logger.warning("Startup check failed (will retry at next scheduled run): %s", e)
     finally:
         await engine.dispose()
 
