@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import Settings, get_settings
 from ..database import get_db
 from ..deps import get_current_user
+from ..services.analytics import track
 from ..models.account import Account
 from ..models.strategy import Strategy
 from ..models.trading import StrategyActivation, ActivationStatus
@@ -23,6 +25,7 @@ async def activate_strategy(
     req: ActivateStrategyRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
 ):
     """Activate a strategy on an account for live/sim trading."""
     # Verify strategy ownership
@@ -65,6 +68,14 @@ async def activate_strategy(
     )
     db.add(activation)
     await db.flush()
+
+    track(
+        settings.INGESTOR_URL, "simulation_activate",
+        user_id=current_user.id,
+        strategy_id=req.strategy_id,
+        account_id=req.account_id,
+        tickers=req.tickers,
+    )
     return activation
 
 

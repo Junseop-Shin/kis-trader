@@ -43,6 +43,10 @@ export default function DashboardLayout({
     }
   }, [user, router, setUser, logout]);
 
+  useEffect(() => {
+    api.post("/analytics/pageview", { path: pathname }).catch(() => {});
+  }, [pathname]);
+
   if (!isAuthenticated && (typeof window === "undefined" || !localStorage.getItem("access_token"))) {
     return null;
   }

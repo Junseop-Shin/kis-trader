@@ -34,7 +34,8 @@ jobs:
                 echo SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }} >> C:\Users\ylswn\Projects\kis-trader\.env && \
                 echo SLACK_CHANNEL=#kis-trader >> C:\Users\ylswn\Projects\kis-trader\.env && \
                 echo REAL_TRADING_URL=http://real-trading:8002 >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo BACKTEST_WORKER_URL=http://host.docker.internal:8001 >> C:\Users\ylswn\Projects\kis-trader\.env"
+                echo BACKTEST_WORKER_URL=http://host.docker.internal:8001 >> C:\Users\ylswn\Projects\kis-trader\.env && \
+                echo INGESTOR_URL=https://ingestor.nuclearbomb6518.com >> C:\Users\ylswn\Projects\kis-trader\.env"
 
       - name: Docker compose up
         run: |

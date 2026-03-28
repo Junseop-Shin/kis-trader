@@ -20,6 +20,7 @@ from ..schemas.backtest import (
     BacktestRunResponse,
     CounterfactualRequest,
 )
+from ..services.analytics import track
 from ..services.backtest_service import run_counterfactual
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
@@ -154,6 +155,13 @@ async def create_backtest_run(
     run.status = BacktestStatus.RUNNING
     await db.flush()
 
+    track(
+        settings.INGESTOR_URL, "backtest_run",
+        user_id=current_user.id,
+        strategy_id=req.strategy_id,
+        tickers=req.tickers,
+        validation_type=req.validation_type,
+    )
     return run
 
 

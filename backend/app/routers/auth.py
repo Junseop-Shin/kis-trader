@@ -15,6 +15,7 @@ from ..schemas.auth import (
     TOTPVerifyRequest,
     UserResponse,
 )
+from ..services.analytics import track
 from ..services.auth_service import (
     authenticate_user,
     refresh_tokens,
@@ -53,6 +54,7 @@ async def login(
         tokens = await authenticate_user(
             req.email, req.password, req.totp_code, ip_address, db, settings
         )
+        track(settings.INGESTOR_URL, "login", email=req.email, ip=ip_address)
         return tokens
     except ValueError as e:
         error_msg = str(e)

@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .middleware.audit_middleware import AuditMiddleware
+from .services.analytics import track
 from .routers import auth, market, accounts, strategies, backtest, trading
 from .workers.anomaly_detector import check_anomalies
 from .workers.kis_token_refresher import refresh_kis_tokens
@@ -113,3 +114,10 @@ app.include_router(trading.router)
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "3.0.0"}
+
+
+@app.post("/analytics/pageview", status_code=202)
+async def pageview(req: dict):
+    """Proxy pageview events from frontend to ingestor."""
+    track(settings.INGESTOR_URL, "pageview", path=req.get("path"), title=req.get("title"))
+    return {"queued": 1}

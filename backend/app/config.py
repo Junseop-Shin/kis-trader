@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # Real Trading (internal)
     REAL_TRADING_URL: str = "http://localhost:8002"
 
+    # Analytics
+    INGESTOR_URL: str = ""
+
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "https://trade.yourdomain.com"]
 
