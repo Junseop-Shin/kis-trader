@@ -9,37 +9,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Write .env for Windows
-        run: |
-          cat > .env << 'ENVEOF'
-          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
-          KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }}
-          INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}
-          SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_CHANNEL=#kis-trader
-          REAL_TRADING_URL=http://real-trading:8002
-          BACKTEST_WORKER_URL=http://host.docker.internal:8001
-          ENVEOF
-
-      - name: Copy files to Windows
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: windows.nuclearbomb6518.com
-          username: ylswn
-          port: 2222
-          key: ${{ secrets.WINDOWS_SSH_KEY }}
-          source: "."
-          target: "C:/Users/ylswn/Projects/kis-trader"
-          overwrite: true
-
-      - name: Start containers
+      - name: Deploy to Windows Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: windows.nuclearbomb6518.com
           username: ylswn
           port: 2222
           key: ${{ secrets.WINDOWS_SSH_KEY }}
-          script: powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading; Write-Host 'Deploy complete'"
+          command_timeout: 30m
+          script: |
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "
+              $ProgressPreference = 'SilentlyContinue';
+              $ErrorActionPreference = 'Stop';
+              $base = 'C:\Users\ylswn\Projects';
+              $dir  = '$base\kis-trader';
+              $zip  = '$base\kis-main.zip';
+              $tmp  = '$base\kis-trader-main';
+
+              Write-Host 'Downloading repo...';
+              Invoke-WebRequest 'https://github.com/Junseop-Shin/kis-trader/archive/refs/heads/main.zip' -OutFile $zip -Headers @{Authorization='token ${{ github.token }}'};
+
+              Write-Host 'Extracting...';
+              if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force };
+              Expand-Archive $zip -DestinationPath $base -Force;
+              Remove-Item $zip;
+
+              Write-Host 'Replacing deployment directory...';
+              if (Test-Path $dir) { Remove-Item $dir -Recurse -Force };
+              Rename-Item $tmp $dir;
+
+              Write-Host 'Writing .env...';
+              Set-Content '$dir\.env' @'
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+            KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }}
+            INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}
+            SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+            SLACK_CHANNEL=#kis-trader
+            REAL_TRADING_URL=http://real-trading:8002
+            BACKTEST_WORKER_URL=http://host.docker.internal:8001
+            '@;
+
+              Write-Host 'Starting containers...';
+              Set-Location $dir;
+              docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading;
+              Write-Host 'Deploy complete!'
+            "
