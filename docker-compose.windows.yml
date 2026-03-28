@@ -3,7 +3,7 @@ version: '3.9'
 # Usage: docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build
 #
 # Reuses existing techfeed-postgres on host:3104 (TimescaleDB pg15)
-# DB: kistrader / User: kistrader / Pass: see POSTGRES_PASSWORD secret
+# DB: kistrader / User: kistrader
 services:
   frontend:
     ports:
@@ -15,21 +15,25 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
       - CORS_ORIGINS=["https://trader.nuclearbomb6518.com","http://localhost:3000"]
+    depends_on:
+      - redis
 
   data-collector:
     environment:
       - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
+    depends_on: []
 
   real-trading:
     environment:
       - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
+    depends_on: []
 
-  # postgres: use existing techfeed-postgres on host:3104 — not started here
+  # postgres: reuse existing techfeed-postgres on host:3104 — disabled here
   postgres:
     profiles:
       - disabled
 
-  # cloudflared: managed by Windows host tunnel — not started here
+  # cloudflared: managed by Windows host tunnel — disabled here
   cloudflared:
     profiles:
       - disabled
