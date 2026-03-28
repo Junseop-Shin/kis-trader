@@ -15,9 +15,9 @@ redis==5.0.8
 celery==5.4.0
 slack-sdk==3.31.0
 apscheduler==3.10.4
-pykrx==1.0.46
-pandas==2.2.2
-pandas-ta==0.4.71b0
+pykrx>=1.0.46
+pandas>=2.2.2
+pandas-ta>=0.4.71b0
 numpy>=1.26.4
 python-dotenv==1.0.1
 qrcode[pil]==7.4.2
