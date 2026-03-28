@@ -9,6 +9,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Encode .env content as base64
+        id: envenc
+        run: |
+          ENV=$(printf '%s\n' \
+            "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" \
+            "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" \
+            "KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }}" \
+            "INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}" \
+            "SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}" \
+            "SLACK_CHANNEL=#kis-trader" \
+            "REAL_TRADING_URL=http://real-trading:8002" \
+            "BACKTEST_WORKER_URL=http://host.docker.internal:8001")
+          echo "b64=$(echo "$ENV" | base64 -w 0)" >> $GITHUB_OUTPUT
+
       - name: Deploy to Windows Server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -17,20 +31,9 @@ jobs:
           port: 2222
           key: ${{ secrets.WINDOWS_SSH_KEY }}
           command_timeout: 30m
-          script_stop: true
           script: |
-            powershell -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest 'https://github.com/Junseop-Shin/kis-trader/archive/refs/heads/main.zip' -OutFile 'C:\Users\ylswn\Projects\kis-main.zip' -Headers @{Authorization='token ${{ github.token }}'}"
-            powershell -Command "if (Test-Path 'C:\Users\ylswn\Projects\kis-trader-main') { Remove-Item 'C:\Users\ylswn\Projects\kis-trader-main' -Recurse -Force }"
-            powershell -Command "Expand-Archive 'C:\Users\ylswn\Projects\kis-main.zip' -DestinationPath 'C:\Users\ylswn\Projects\' -Force"
-            powershell -Command "Remove-Item 'C:\Users\ylswn\Projects\kis-main.zip'"
-            powershell -Command "if (Test-Path 'C:\Users\ylswn\Projects\kis-trader') { Remove-Item 'C:\Users\ylswn\Projects\kis-trader' -Recurse -Force }"
-            powershell -Command "Rename-Item 'C:\Users\ylswn\Projects\kis-trader-main' 'C:\Users\ylswn\Projects\kis-trader'"
-            powershell -Command "Set-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }}'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'SLACK_CHANNEL=#kis-trader'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'REAL_TRADING_URL=http://real-trading:8002'"
-            powershell -Command "Add-Content 'C:\Users\ylswn\Projects\kis-trader\.env' 'BACKTEST_WORKER_URL=http://host.docker.internal:8001'"
-            powershell -Command "Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading"
+            powershell -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest 'https://github.com/Junseop-Shin/kis-trader/archive/${{ github.sha }}.zip' -OutFile 'C:\Users\ylswn\Projects\kis-main.zip'"
+            powershell -Command "Remove-Item 'C:\Users\ylswn\Projects\kis-trader-main' -Recurse -Force -ErrorAction SilentlyContinue; Expand-Archive 'C:\Users\ylswn\Projects\kis-main.zip' -DestinationPath 'C:\Users\ylswn\Projects\' -Force; Remove-Item 'C:\Users\ylswn\Projects\kis-main.zip'"
+            powershell -Command "Remove-Item 'C:\Users\ylswn\Projects\kis-trader' -Recurse -Force -ErrorAction SilentlyContinue; Rename-Item 'C:\Users\ylswn\Projects\kis-trader-main' 'C:\Users\ylswn\Projects\kis-trader'"
+            powershell -Command "$b='${{ steps.envenc.outputs.b64 }}'; [IO.File]::WriteAllBytes('C:\Users\ylswn\Projects\kis-trader\.env',[Convert]::FromBase64String($b))"
+            powershell -Command "Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading; Write-Host 'Deploy done'"

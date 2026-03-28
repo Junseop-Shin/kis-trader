@@ -28,10 +28,11 @@ services:
       - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
     depends_on: []
 
-  # postgres: reuse existing techfeed-postgres on host:3104 — disabled here
+  # postgres: replaced with no-op — real DB is techfeed-postgres on host:3104
   postgres:
-    profiles:
-      - disabled
+    image: busybox
+    command: ["echo", "using external postgres on host:3104"]
+    restart: "no"
 
   # cloudflared: managed by Windows host tunnel — disabled here
   cloudflared:
