@@ -43,7 +43,7 @@ export default function DashboardLayout({
     }
   }, [user, router, setUser, logout]);
 
-  if (!isAuthenticated && !localStorage.getItem("access_token")) {
+  if (!isAuthenticated && (typeof window === "undefined" || !localStorage.getItem("access_token"))) {
     return null;
   }
 
