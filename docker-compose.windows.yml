@@ -1,0 +1,35 @@
+version: '3.9'
+# Windows home server overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build
+#
+# Reuses existing techfeed-postgres on host:3104 (TimescaleDB pg15)
+# DB: kistrader / User: kistrader / Pass: see POSTGRES_PASSWORD secret
+services:
+  frontend:
+    ports:
+      - "3200:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=https://trader-api.nuclearbomb6518.com
+
+  backend:
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
+      - CORS_ORIGINS=["https://trader.nuclearbomb6518.com","http://localhost:3000"]
+
+  data-collector:
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
+
+  real-trading:
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://kistrader:${POSTGRES_PASSWORD}@host.docker.internal:3104/kistrader
+
+  # postgres: use existing techfeed-postgres on host:3104 — not started here
+  postgres:
+    profiles:
+      - disabled
+
+  # cloudflared: managed by Windows host tunnel — not started here
+  cloudflared:
+    profiles:
+      - disabled
