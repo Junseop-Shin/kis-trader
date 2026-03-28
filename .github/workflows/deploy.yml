@@ -1,0 +1,41 @@
+name: Deploy to Windows Server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Windows Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: windows.nuclearbomb6518.com
+          username: ylswn
+          port: 2222
+          key: ${{ secrets.WINDOWS_SSH_KEY }}
+          script: |
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "
+              $ErrorActionPreference = 'Stop';
+              $dir = 'C:\Users\ylswn\Projects\kis-trader';
+              if (-not (Test-Path $dir)) {
+                git clone https://github.com/Junseop-Shin/kis-trader.git $dir
+              };
+              Set-Location $dir;
+              git fetch origin;
+              git checkout main;
+              git reset --hard origin/main;
+              @'
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+            KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }}
+            INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }}
+            SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+            SLACK_CHANNEL=#kis-trader
+            REAL_TRADING_URL=http://real-trading:8002
+            BACKTEST_WORKER_URL=http://host.docker.internal:8001
+            '@ | Set-Content .env;
+              docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading
+            "
