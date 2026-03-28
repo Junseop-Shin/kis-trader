@@ -31,10 +31,11 @@ jobs:
           port: 2222
           key: ${{ secrets.WINDOWS_SSH_KEY }}
           command_timeout: 30m
+          script_stop: true
           script: |
-            powershell -Command "if (Test-Path 'C:\Users\ylswn\Projects\kis-trader') { Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml down 2>$null }"
-            powershell -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest 'https://github.com/Junseop-Shin/kis-trader/archive/refs/heads/main.zip' -OutFile 'C:\Users\ylswn\Projects\kis-main.zip'"
-            powershell -Command "Remove-Item 'C:\Users\ylswn\Projects\kis-trader-main' -Recurse -Force -ErrorAction SilentlyContinue; Expand-Archive 'C:\Users\ylswn\Projects\kis-main.zip' -DestinationPath 'C:\Users\ylswn\Projects\' -Force; Remove-Item 'C:\Users\ylswn\Projects\kis-main.zip'"
-            powershell -Command "Remove-Item 'C:\Users\ylswn\Projects\kis-trader' -Recurse -Force -ErrorAction SilentlyContinue; Rename-Item 'C:\Users\ylswn\Projects\kis-trader-main' 'C:\Users\ylswn\Projects\kis-trader'"
-            powershell -Command "$b='${{ steps.envenc.outputs.b64 }}'; [IO.File]::WriteAllBytes('C:\Users\ylswn\Projects\kis-trader\.env',[Convert]::FromBase64String($b))"
-            powershell -Command "Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading backtest-worker; Write-Host 'Deploy done'"
+            powershell -Command "Write-Host 'Step1: down'; if (Test-Path 'C:\Users\ylswn\Projects\kis-trader') { Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml down 2>$null }; Write-Host 'Step1: done'"
+            powershell -Command "Write-Host 'Step2: download'; $ProgressPreference='SilentlyContinue'; Invoke-WebRequest 'https://github.com/Junseop-Shin/kis-trader/archive/refs/heads/main.zip' -OutFile 'C:\Users\ylswn\Projects\kis-main.zip'; Write-Host 'Step2: done'"
+            powershell -Command "Write-Host 'Step3: extract'; Remove-Item 'C:\Users\ylswn\Projects\kis-trader-main' -Recurse -Force -ErrorAction SilentlyContinue; Expand-Archive 'C:\Users\ylswn\Projects\kis-main.zip' -DestinationPath 'C:\Users\ylswn\Projects\' -Force; Remove-Item 'C:\Users\ylswn\Projects\kis-main.zip'; Write-Host 'Step3: done'"
+            powershell -Command "Write-Host 'Step4: rename'; Remove-Item 'C:\Users\ylswn\Projects\kis-trader' -Recurse -Force -ErrorAction SilentlyContinue; Rename-Item 'C:\Users\ylswn\Projects\kis-trader-main' 'C:\Users\ylswn\Projects\kis-trader'; Write-Host 'Step4: done'"
+            powershell -Command "Write-Host 'Step5: env'; $b='${{ steps.envenc.outputs.b64 }}'; [IO.File]::WriteAllBytes('C:\Users\ylswn\Projects\kis-trader\.env',[Convert]::FromBase64String($b)); Write-Host 'Step5: done'"
+            powershell -Command "Write-Host 'Step6: up'; Set-Location 'C:\Users\ylswn\Projects\kis-trader'; docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading backtest-worker; Write-Host 'Deploy done'"
