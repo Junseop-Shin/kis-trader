@@ -87,7 +87,7 @@ def upgrade() -> None:
         sa.Column("close", sa.Integer(), nullable=False),
         sa.Column("volume", sa.BigInteger(), nullable=False),
         sa.Column("change_pct", sa.Float(), nullable=True),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("id", "date"),
         sa.UniqueConstraint("ticker", "date", name="uq_price_daily_ticker_date"),
     )
     op.create_index("ix_price_daily_ticker", "price_daily", ["ticker"])
@@ -109,7 +109,7 @@ def upgrade() -> None:
         sa.Column("low", sa.Integer(), nullable=False),
         sa.Column("close", sa.Integer(), nullable=False),
         sa.Column("volume", sa.BigInteger(), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("id", "datetime"),
         sa.UniqueConstraint("ticker", "datetime", name="uq_price_minute_ticker_datetime"),
     )
     op.create_index("ix_price_minute_ticker", "price_minute", ["ticker"])

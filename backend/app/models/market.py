@@ -31,7 +31,7 @@ class PriceDaily(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     ticker: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    date: Mapped[date] = mapped_column(Date, nullable=False)
+    date: Mapped[date] = mapped_column(Date, primary_key=True, nullable=False)
     open: Mapped[int] = mapped_column(Integer, nullable=False)
     high: Mapped[int] = mapped_column(Integer, nullable=False)
     low: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -55,7 +55,7 @@ class PriceMinute(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     ticker: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True, nullable=False)
     open: Mapped[int] = mapped_column(Integer, nullable=False)
     high: Mapped[int] = mapped_column(Integer, nullable=False)
     low: Mapped[int] = mapped_column(Integer, nullable=False)
