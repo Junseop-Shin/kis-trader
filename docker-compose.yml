@@ -35,9 +35,12 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://trader-api.nuclearbomb6518.com
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=https://trader-api.nuclearbomb6518.com
     networks:
       - external
     restart: unless-stopped
