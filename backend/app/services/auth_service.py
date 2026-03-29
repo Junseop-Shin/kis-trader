@@ -3,27 +3,25 @@ import io
 import secrets
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import pyotp
 import qrcode
 from jose import jwt
-from passlib.context import CryptContext
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import Settings
 from ..models.user import User, UserRole, RefreshToken
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 MAX_LOGIN_FAILURES = 5
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(12)).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_access_token(user_id: int, settings: Settings) -> str:
