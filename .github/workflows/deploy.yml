@@ -19,25 +19,25 @@ jobs:
 
       - name: Sync code to Windows
         run: |
-          SSH="ssh -i ~/.ssh/deploy_key -p 2222 -o StrictHostKeyChecking=no ylswn@windows.nuclearbomb6518.com"
-          $SSH "if not exist \"C:\Users\ylswn\Projects\kis-trader\" mkdir \"C:\Users\ylswn\Projects\kis-trader\""
+          SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
+          $SSH "if not exist \"${{ secrets.DEPLOY_PATH }}\" mkdir \"${{ secrets.DEPLOY_PATH }}\""
           tar czf - --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' --exclude='node_modules' . \
-            | $SSH "tar xzf - -C C:/Users/ylswn/Projects/kis-trader"
+            | $SSH "tar xzf - -C ${{ secrets.DEPLOY_PATH }}"
 
       - name: Write .env
         run: |
-          SSH="ssh -i ~/.ssh/deploy_key -p 2222 -o StrictHostKeyChecking=no ylswn@windows.nuclearbomb6518.com"
-          $SSH "echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} > C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }} >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }} >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }} >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo SLACK_CHANNEL=#kis-trader >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo REAL_TRADING_URL=http://real-trading:8002 >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo BACKTEST_WORKER_URL=http://host.docker.internal:8001 >> C:\Users\ylswn\Projects\kis-trader\.env && \
-                echo INGESTOR_URL=https://ingestor.nuclearbomb6518.com >> C:\Users\ylswn\Projects\kis-trader\.env"
+          SSH="ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
+          $SSH "echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} > ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo KIS_ENCRYPT_KEY=${{ secrets.KIS_ENCRYPT_KEY }} >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo INTERNAL_API_KEY=${{ secrets.INTERNAL_API_KEY }} >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }} >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo SLACK_CHANNEL=#kis-trader >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo REAL_TRADING_URL=http://real-trading:8002 >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo BACKTEST_WORKER_URL=http://host.docker.internal:8001 >> ${{ secrets.DEPLOY_PATH }}\.env && \
+                echo INGESTOR_URL=${{ secrets.INGESTOR_URL }} >> ${{ secrets.DEPLOY_PATH }}\.env"
 
       - name: Docker compose up
         run: |
-          ssh -i ~/.ssh/deploy_key -p 2222 -o StrictHostKeyChecking=no ylswn@windows.nuclearbomb6518.com \
-            "cd C:\Users\ylswn\Projects\kis-trader && docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading backtest-worker"
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cd ${{ secrets.DEPLOY_PATH }} && docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d --build redis backend frontend data-collector real-trading backtest-worker"
